@@ -3,29 +3,29 @@ package mystery_maze;
 import java.awt.EventQueue;
 import javax.swing.JFrame;
 
-public class Application extends JFrame {
+public class Snake extends JFrame {
 
-    public Application() {
+    public Snake() {
         
         initUI();
     }
     
     private void initUI() {
         
-        Board board = new Board();
-        add(board);
+        add(new Board());
         
-        setSize(board.B_WIDTH, board.B_HEIGHT);
+        setResizable(false);
+        pack();
         
-        setTitle("Mystery Maze");
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setTitle("Snake");
         setLocationRelativeTo(null);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     }
-
+    
     public static void main(String[] args) {
         
         EventQueue.invokeLater(() -> {
-            Application ex = new Application();
+            JFrame ex = new Snake();
             ex.setVisible(true);
         });
     }

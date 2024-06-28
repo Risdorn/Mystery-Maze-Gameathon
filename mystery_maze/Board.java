@@ -2,239 +2,160 @@ package mystery_maze;
 
 import java.awt.Color;
 import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.FontMetrics;
 import java.awt.Graphics;
-import java.awt.Rectangle;
+import java.awt.Image;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.util.ArrayList;
-import java.util.List;
+import javax.swing.ImageIcon;
 import javax.swing.JPanel;
-import javax.swing.Timer;
 
 public class Board extends JPanel implements ActionListener {
+    
+    private final int SPRITE_SIZE = 20;
+    public final int B_WIDTH = 900;
+    public final int B_HEIGHT = 900;
+    private final int DELAY = 140;
+    private final int MAZE_X = 140;
+    private final int MAZE_Y = 245;
+    private final int EXIT_X = 29;
+    private final int EXIT_Y = 29;
+    private final int HIDDEN_TREASURE_COUNT = 2;
 
-    private Timer timer;
-    private SpaceShip spaceship;
-    private List<Alien> aliens;
-    private boolean ingame;
-    private final int ICRAFT_X = 40;
-    private final int ICRAFT_Y = 60;
-    private final int B_WIDTH = 400;
-    private final int B_HEIGHT = 300;
-    private final int DELAY = 15;
+    private boolean leftDirection = false;
+    private boolean rightDirection = true;
+    private boolean upDirection = false;
+    private boolean downDirection = false;
 
-    private final int[][] pos = {
-        {2380, 29}, {2500, 59}, {1380, 89},
-        {780, 109}, {580, 139}, {680, 239},
-        {790, 259}, {760, 50}, {790, 150},
-        {980, 209}, {560, 45}, {510, 70},
-        {930, 159}, {590, 80}, {530, 60},
-        {940, 59}, {990, 30}, {920, 200},
-        {900, 259}, {660, 50}, {540, 90},
-        {810, 220}, {860, 20}, {740, 180},
-        {820, 128}, {490, 170}, {700, 30}
-    };
+    private int[][] grid;
+
+    private Image wall_1;
+    private Image wall_2;
+    private Image grass;
+    private Image exit;
+    private Image spike;
 
     public Board() {
-
         initBoard();
     }
 
     private void initBoard() {
 
         addKeyListener(new TAdapter());
+        setBackground(Color.black);
         setFocusable(true);
-        setBackground(Color.BLACK);
-        ingame = true;
 
         setPreferredSize(new Dimension(B_WIDTH, B_HEIGHT));
-
-        spaceship = new SpaceShip(ICRAFT_X, ICRAFT_Y);
-
-        initAliens();
-
-        timer = new Timer(DELAY, this);
-        timer.start();
+        loadImages();
+        initGame();
     }
 
-    public void initAliens() {
-        
-        aliens = new ArrayList<>();
+    private void loadImages() {
 
-        for (int[] p : pos) {
-            aliens.add(new Alien(p[0], p[1]));
+        ImageIcon iid = new ImageIcon("Assets/V01_Tile1.png");
+        wall_1 = iid.getImage();
+        wall_1 = wall_1.getScaledInstance(SPRITE_SIZE, SPRITE_SIZE, Image.SCALE_DEFAULT);
+
+        ImageIcon iia = new ImageIcon("Assets/V01_Tile2.png");
+        wall_2 = iia.getImage();
+        wall_2 = wall_2.getScaledInstance(SPRITE_SIZE, SPRITE_SIZE, Image.SCALE_DEFAULT);
+
+        ImageIcon iih = new ImageIcon("Assets/V01_Tile3.png");
+        grass = iih.getImage();
+        grass = grass.getScaledInstance(SPRITE_SIZE, SPRITE_SIZE, Image.SCALE_DEFAULT);
+
+        ImageIcon iie = new ImageIcon("Assets/V01_Door.png");
+        exit = iie.getImage();
+        exit = exit.getScaledInstance(SPRITE_SIZE, SPRITE_SIZE, Image.SCALE_DEFAULT);
+
+        ImageIcon iis = new ImageIcon("Assets/V01_Obstacle.png");
+        spike = iis.getImage();
+        spike = spike.getScaledInstance(SPRITE_SIZE, SPRITE_SIZE, Image.SCALE_DEFAULT);
+    }
+
+    private void initGame() {
+
+        Maze maze = new Maze(31, 31);
+        if (maze.isMazeExists()) {
+            grid = maze.getMaze();
         }
+        System.out.println("The Maze has been generated");
+        repaint();
+
     }
 
     @Override
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
 
-        if (ingame) {
+        doDrawing(g);
+    }
 
-            drawObjects(g);
-
-        } else {
-
-            drawGameOver(g);
+    private void doDrawing(Graphics g) {
+        for (int i = 0; i < B_WIDTH/SPRITE_SIZE + 1; i++) {
+            for(int j = 0; j < B_HEIGHT/SPRITE_SIZE + 1; j++){
+                g.drawImage(grass, (i * SPRITE_SIZE), (j * SPRITE_SIZE), this);
+            }
         }
+        double r;
+        for(int i = 0; i < 31; i++){
+            for(int j = 0; j < 31; j++){
+                r = Math.random();
+                if(r > 0.90 && grid[i][j] == 1 && i!=0 && grid[i-1][j] != 1){
+                    g.drawImage(spike, (j * SPRITE_SIZE) + MAZE_X, (i * SPRITE_SIZE) + MAZE_Y, this);
+                }else if(grid[i][j] == 1 && i != 30 && grid[i+1][j] == 1){
+                    g.drawImage(wall_1, (j * SPRITE_SIZE) + MAZE_X, (i * SPRITE_SIZE) + MAZE_Y, this);
+                }else if (grid[i][j] == 1){
+                    g.drawImage(wall_2, (j * SPRITE_SIZE) + MAZE_X, (i * SPRITE_SIZE) + MAZE_Y, this);
+                }else{
+                    g.drawImage(grass, (j * SPRITE_SIZE) + MAZE_X, (i * SPRITE_SIZE) + MAZE_Y, this);
+                }
+            }
+        }
+        g.drawImage(exit, (EXIT_X * SPRITE_SIZE) + MAZE_X, (EXIT_Y * SPRITE_SIZE) + MAZE_Y, this);
 
         Toolkit.getDefaultToolkit().sync();
-    }
-
-    private void drawObjects(Graphics g) {
-
-        if (spaceship.isVisible()) {
-            g.drawImage(spaceship.getImage(), spaceship.getX(), spaceship.getY(),
-                    this);
-        }
-
-        List<Missile> ms = spaceship.getMissiles();
-
-        for (Missile missile : ms) {
-            if (missile.isVisible()) {
-                g.drawImage(missile.getImage(), missile.getX(), 
-                        missile.getY(), this);
-            }
-        }
-
-        for (Alien alien : aliens) {
-            if (alien.isVisible()) {
-                g.drawImage(alien.getImage(), alien.getX(), alien.getY(), this);
-            }
-        }
-
-        g.setColor(Color.WHITE);
-        g.drawString("Aliens left: " + aliens.size(), 5, 15);
-    }
-
-    private void drawGameOver(Graphics g) {
-
-        String msg = "Game Over";
-        Font small = new Font("Helvetica", Font.BOLD, 14);
-        FontMetrics fm = getFontMetrics(small);
-
-        g.setColor(Color.white);
-        g.setFont(small);
-        g.drawString(msg, (B_WIDTH - fm.stringWidth(msg)) / 2,
-                B_HEIGHT / 2);
+   
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
 
-        inGame();
-
-        updateShip();
-        updateMissiles();
-        updateAliens();
-
-        checkCollisions();
-
         repaint();
-    }
-
-    private void inGame() {
-
-        if (!ingame) {
-            timer.stop();
-        }
-    }
-
-    private void updateShip() {
-
-        if (spaceship.isVisible()) {
-            
-            spaceship.move();
-        }
-    }
-
-    private void updateMissiles() {
-
-        List<Missile> ms = spaceship.getMissiles();
-
-        for (int i = 0; i < ms.size(); i++) {
-
-            Missile m = ms.get(i);
-
-            if (m.isVisible()) {
-                m.move();
-            } else {
-                ms.remove(i);
-            }
-        }
-    }
-
-    private void updateAliens() {
-
-        if (aliens.isEmpty()) {
-
-            ingame = false;
-            return;
-        }
-
-        for (int i = 0; i < aliens.size(); i++) {
-
-            Alien a = aliens.get(i);
-            
-            if (a.isVisible()) {
-                a.move();
-            } else {
-                aliens.remove(i);
-            }
-        }
-    }
-
-    public void checkCollisions() {
-
-        Rectangle r3 = spaceship.getBounds();
-
-        for (Alien alien : aliens) {
-            
-            Rectangle r2 = alien.getBounds();
-
-            if (r3.intersects(r2)) {
-                
-                spaceship.setVisible(false);
-                alien.setVisible(false);
-                ingame = false;
-            }
-        }
-
-        List<Missile> ms = spaceship.getMissiles();
-
-        for (Missile m : ms) {
-
-            Rectangle r1 = m.getBounds();
-
-            for (Alien alien : aliens) {
-
-                Rectangle r2 = alien.getBounds();
-
-                if (r1.intersects(r2)) {
-                    
-                    m.setVisible(false);
-                    alien.setVisible(false);
-                }
-            }
-        }
     }
 
     private class TAdapter extends KeyAdapter {
 
         @Override
-        public void keyReleased(KeyEvent e) {
-            spaceship.keyReleased(e);
-        }
-
-        @Override
         public void keyPressed(KeyEvent e) {
-            spaceship.keyPressed(e);
+
+            int key = e.getKeyCode();
+
+            if ((key == KeyEvent.VK_LEFT) && (!rightDirection)) {
+                leftDirection = true;
+                upDirection = false;
+                downDirection = false;
+            }
+
+            if ((key == KeyEvent.VK_RIGHT) && (!leftDirection)) {
+                rightDirection = true;
+                upDirection = false;
+                downDirection = false;
+            }
+
+            if ((key == KeyEvent.VK_UP) && (!downDirection)) {
+                upDirection = true;
+                rightDirection = false;
+                leftDirection = false;
+            }
+
+            if ((key == KeyEvent.VK_DOWN) && (!upDirection)) {
+                downDirection = true;
+                rightDirection = false;
+                leftDirection = false;
+            }
         }
     }
 }

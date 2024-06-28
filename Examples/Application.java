@@ -1,5 +1,3 @@
-package mystery_maze;
-
 import java.awt.EventQueue;
 import javax.swing.JFrame;
 
@@ -12,12 +10,11 @@ public class Application extends JFrame {
     
     private void initUI() {
         
-        Board board = new Board();
-        add(board);
+        add(new Board());
         
-        setSize(board.B_WIDTH, board.B_HEIGHT);
+        setSize(250, 200);
         
-        setTitle("Mystery Maze");
+        setTitle("Application");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
     }
