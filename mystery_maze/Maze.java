@@ -4,10 +4,10 @@ public class Maze {
     
     int[][] maze;
 
-    final static int wallCode = 1;
-    final static int pathCode = 2;
-    final static int emptyCode = 3;
-    final static int visitedCode = 4;
+    final static int WALL_CODE = 1;
+    final static int PATH_CODE = 2;
+    final static int EMPTY_CODE = 3;
+    final static int VISITED_CODE = 4;
 
     int rows, columns;
 
@@ -39,7 +39,7 @@ public class Maze {
 
         for (i = 0; i < rows; i++) // start with everything being a wall
             for (j = 0; j < columns; j++)
-                maze[i][j] = wallCode;
+                maze[i][j] = WALL_CODE;
         
         for (i = 1; i < rows - 1; i += 2){ // make a grid of empty rooms
             for (j = 1; j < columns - 1; j += 2) {
@@ -65,10 +65,10 @@ public class Maze {
             wallrow[r] = wallrow[i];
             wallcol[r] = wallcol[i];
         }
-        for (i = 1; i < rows - 1; i++) // replace negative values in maze[][] with emptyCode
+        for (i = 1; i < rows - 1; i++) // replace negative values in maze[][] with EMPTY_CODE
             for (j = 1; j < columns - 1; j++)
                 if (maze[i][j] < 0)
-                    maze[i][j] = emptyCode;
+                    maze[i][j] = EMPTY_CODE;
     }
 
     void tearDown(int row, int col) {
@@ -108,8 +108,8 @@ public class Maze {
         // (row,col). Return true if a solution is found. The maze is
         // considered to be solved if the path reaches the lower right cell.
         
-        if (maze[row][col] == emptyCode) {
-            maze[row][col] = pathCode; // add this cell to the path
+        if (maze[row][col] == EMPTY_CODE) {
+            maze[row][col] = PATH_CODE; // add this cell to the path
             if (row == rows - 2 && col == columns - 2){
                 mazeExists =  true; // path has reached goal
                 return mazeExists;
@@ -123,7 +123,7 @@ public class Maze {
                 return mazeExists;
             }
             // maze can't be solved from this cell, so backtrack out of the cell
-            maze[row][col] = visitedCode; // mark cell as having been visited
+            maze[row][col] = VISITED_CODE; // mark cell as having been visited
         }
         mazeExists = false;
         return mazeExists;
