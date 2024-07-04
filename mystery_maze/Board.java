@@ -48,6 +48,7 @@ public class Board extends JPanel implements ActionListener {
     private int[][] grid;
     private final List<int[]> coins = new ArrayList<>();
     private final List<Enemy> enemies = new ArrayList<>();
+    private final List<Enemy> removeEnemies = new ArrayList<>();
     private final Date startTime = new Date();
     private Timer timer;
     private Timer gameTimer;
@@ -297,8 +298,8 @@ public class Board extends JPanel implements ActionListener {
 
             g.drawImage(exit, (EXIT_X * SPRITE_SIZE) + MAZE_X, (EXIT_Y * SPRITE_SIZE) + MAZE_Y, this);
             g.drawImage(player.getImage(), player.getX(), player.getY(), this);
-            for(int i = 0; i < ENEMY_COUNT; i++){
-                g.drawImage(enemies.get(i).getImage(), enemies.get(i).getX(), enemies.get(i).getY(), this);
+            for(Enemy enemy: enemies){
+                g.drawImage(enemy.getImage(), enemy.getX(), enemy.getY(), this);
             }
 
             // Different things to draw based on whether bomb is flashing or not
@@ -313,7 +314,7 @@ public class Board extends JPanel implements ActionListener {
                     g.drawImage(bomb.getImage(), bomb.getX(), bomb.getY(), this);
                     int i = (bomb.getX() - MAZE_X)/SPRITE_SIZE;
                     int j = (bomb.getY() - MAZE_Y)/SPRITE_SIZE - 1;
-                    int range = 2;
+                    int range = bomb.RANGE;
                     while(range-- > 0 && grid[j][i] == GRASS_CODE){
                         g.drawImage(bomb_flash, (i*SPRITE_SIZE) + MAZE_X, (j*SPRITE_SIZE) + MAZE_Y, this);
                         j -= 1;
@@ -467,6 +468,87 @@ public class Board extends JPanel implements ActionListener {
         }
     }
 
+    private void checkBombCollision(){
+        for(Bomb bomb: player.getBombs()){
+            if(bomb.isBlown() && bomb.isFlashing()){
+                int bombX = bomb.getX();
+                int bombY = bomb.getY();
+                int i = (bomb.getY() - MAZE_Y)/SPRITE_SIZE;
+                int j = (bomb.getX() - MAZE_X)/SPRITE_SIZE;
+                int range = bomb.RANGE;
+                for(Enemy enemy: enemies){
+                    if(enemy.getX() == bombX && enemy.getY() == bombY){
+                        removeEnemies.add(enemy);
+                    }
+                }
+                if(player.getX() == bombX && player.getY() == bombY){
+                    inGame = false;
+                }
+                bombX -= SPRITE_SIZE;
+                j -= 1;
+                while(range-- > 0 && grid[j][i] == GRASS_CODE){
+                    for(Enemy enemy: enemies){
+                        if(enemy.getX() == bombX && enemy.getY() == bombY){
+                            removeEnemies.add(enemy);
+                        }
+                    }
+                    if(player.getX() == bombX && player.getY() == bombY){
+                        inGame = false;
+                    }
+                    j -= 1;
+                    bombX -= SPRITE_SIZE;
+                }
+                bombX = bomb.getX() + SPRITE_SIZE;
+                j = (bomb.getY() - MAZE_Y)/SPRITE_SIZE + 1;
+                range = bomb.RANGE;
+                while(range-- > 0 && grid[j][i] == GRASS_CODE){
+                    for(Enemy enemy: enemies){
+                        if(enemy.getX() == bombX && enemy.getY() == bombY){
+                            removeEnemies.add(enemy);
+                        }
+                    }
+                    if(player.getX() == bombX && player.getY() == bombY){
+                        inGame = false;
+                    }
+                    j += 1;
+                    bombX += SPRITE_SIZE;
+                }
+                bombX = bomb.getX();
+                bombY -= SPRITE_SIZE;
+                range = bomb.RANGE;
+                j = (bomb.getY() - MAZE_Y)/SPRITE_SIZE;
+                i -= 1;
+                while(range-- > 0 && grid[j][i] == GRASS_CODE){
+                    for(Enemy enemy: enemies){
+                        if(enemy.getX() == bombX && enemy.getY() == bombY){
+                            removeEnemies.add(enemy);
+                        }
+                    }
+                    if(player.getX() == bombX && player.getY() == bombY){
+                        inGame = false;
+                    }
+                    i -= 1;
+                    bombY -= SPRITE_SIZE;
+                }
+                bombY = bomb.getY() + SPRITE_SIZE;
+                range = bomb.RANGE;
+                i = (bomb.getX() - MAZE_X)/SPRITE_SIZE + 1;
+                while(range-- > 0 && grid[j][i] == GRASS_CODE){
+                    for(Enemy enemy: enemies){
+                        if(enemy.getX() == bombX && enemy.getY() == bombY){
+                            removeEnemies.add(enemy);
+                        }
+                    }
+                    if(player.getX() == bombX && player.getY() == bombY){
+                        inGame = false;
+                    }
+                    i += 1;
+                    bombY += SPRITE_SIZE;
+                }
+            }
+        }
+    }
+
     @Override
     public void actionPerformed(ActionEvent e) {
         //System.out.println("Pass " + counter);
@@ -477,6 +559,7 @@ public class Board extends JPanel implements ActionListener {
                 player.move();
                 checkCell();
             }
+            checkBombCollision();
             //player.move();
         }else{
             timer.stop();
@@ -485,6 +568,10 @@ public class Board extends JPanel implements ActionListener {
     }
 
     ActionListener moveEnemies = (ActionEvent e) -> {
+        for(Enemy enemy: removeEnemies){
+            enemies.remove(enemy);
+        }
+        removeEnemies.clear();
         for(Enemy enemy: enemies){
             int[] coord = playerSeen(enemy);
             if(coord[0] == 1){

@@ -9,7 +9,7 @@ public class Player extends Sprite{
     private final int SPEED = 20;
     protected int dx;
     protected int dy;
-    protected int BOMB_COUNT = 5;
+    protected int BOMB_COUNT = 10;
     private List<Bomb> bombs;
     private int COINS = 0;
     private int KEYS = 0;

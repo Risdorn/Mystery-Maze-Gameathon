@@ -9,6 +9,7 @@ public class Bomb extends Sprite implements ActionListener{
     private boolean blown = false;
     private boolean flashing = false;
     public int blow = 1;
+    protected final int RANGE = 2;
     private final int DELAY = 2000;// milliseconds
     private final int FLASH_DELAY = 1000;// milliseconds
     private Timer timer;
