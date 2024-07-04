@@ -12,14 +12,14 @@ public class Sprite {
     protected int height;
     protected boolean visible;
     protected Image image;
+    protected int SPRITE_SIZE;
 
-    private final int SPRITE_SIZE = 20;
-
-    public Sprite(int x, int y) {
+    public Sprite(int x, int y, int SPRITE_SIZE) {
 
         this.x = x;
         this.y = y;
         visible = true;
+        this.SPRITE_SIZE = SPRITE_SIZE;
     }
 
     protected void getImageDimensions() {
@@ -45,6 +45,14 @@ public class Sprite {
 
     public int getY() {
         return y;
+    }
+
+    public void setX(int x) {
+        this.x = x;
+    }
+
+    public void setY(int y) {
+        this.y = y;
     }
 
     public boolean isVisible() {

@@ -8,6 +8,7 @@ public class Maze {
     final static int PATH_CODE = 2;
     final static int EMPTY_CODE = 3;
     final static int VISITED_CODE = 4;
+    private final int[] START = {1, 1};
 
     int rows, columns;
 
@@ -16,10 +17,17 @@ public class Maze {
     public Maze(int rows, int columns) {
         this.rows = rows;
         this.columns = columns;
-        
         while(!mazeExists){ // make a maze until a solution is found (could take a while!
             makeMaze();
-            solveMaze(1, 1);
+            solveMaze(START[0], START[1]);
+        }
+        
+    }
+
+    public void createMaze() {
+        while(!mazeExists){ // make a maze until a solution is found (could take a while!
+            makeMaze();
+            solveMaze(START[0], START[1]);
         }
     }
 

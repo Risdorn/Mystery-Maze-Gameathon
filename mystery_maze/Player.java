@@ -4,16 +4,19 @@ import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Man extends Sprite{
+public class Player extends Sprite{
     
     private final int SPEED = 20;
     protected int dx;
     protected int dy;
-    private int BOMB_COUNT = 5;
+    protected int BOMB_COUNT = 5;
     private List<Bomb> bombs;
+    private int COINS = 0;
+    private int KEYS = 0;
+    private int CHESTS = 0;
     
-    public Man(int x, int y) {
-        super(x, y);
+    public Player(int x, int y, int SPRITE_SIZE) {
+        super(x, y, SPRITE_SIZE);
         
         initMan();
     }
@@ -42,6 +45,35 @@ public class Man extends Sprite{
         return bombs;
     }
 
+    public int getCoin() {
+        return COINS;
+    }
+
+    public int getKey() {
+        return KEYS;
+    }
+
+    public int getChest() {
+        return CHESTS;
+    }
+
+    public String getScore(){
+        int score = 10*COINS + 100*CHESTS;
+        return "" + score;
+    }
+
+    public void setCoin(int coins) {
+        COINS = coins;
+    }
+
+    public void setKey(int keys) {
+        KEYS = keys;
+    }
+
+    public void setChest(int chests) {
+        CHESTS = chests;
+    }
+
     public void keyPressed(KeyEvent e) {
 
         int key = e.getKeyCode();
@@ -50,24 +82,28 @@ public class Man extends Sprite{
         }
         if (key == KeyEvent.VK_LEFT || key == KeyEvent.VK_A) {
             dx = -SPEED;
+            dy = 0;
         }
 
         if (key == KeyEvent.VK_RIGHT || key == KeyEvent.VK_D) {
             dx = SPEED;
+            dy = 0;
         }
 
         if (key == KeyEvent.VK_UP || key == KeyEvent.VK_W) {
             dy = -SPEED;
+            dx = 0;
         }
 
         if (key == KeyEvent.VK_DOWN || key == KeyEvent.VK_S) {
             dy = SPEED;
+            dx = 0;
         }
     }
 
     public void drop() {
         if(BOMB_COUNT > 0) {
-            bombs.add(new Bomb(x, y));
+            bombs.add(new Bomb(x, y, SPRITE_SIZE));
             BOMB_COUNT -= 1;
         }
     }
