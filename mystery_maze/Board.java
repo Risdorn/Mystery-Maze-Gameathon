@@ -33,6 +33,7 @@ public class Board extends JPanel implements ActionListener {
     private final int Player_X = 1;
     private final int Player_Y = 1;
     private final int HIDDEN_TREASURE_COUNT = 5;
+    private final int ENEMY_COUNT = 5;
     private final int WALL_CODE = 1;
     private final int WALL_2_CODE = 2;
     private final int SPIKE_CODE = 3;
@@ -46,9 +47,11 @@ public class Board extends JPanel implements ActionListener {
 
     private int[][] grid;
     private final List<int[]> coins = new ArrayList<>();
+    private final List<Enemy> enemies = new ArrayList<>();
     private final Date startTime = new Date();
     private Timer timer;
     private Timer gameTimer;
+    private Timer enemyMove;
     private String time;
 
     private Image wall_1;
@@ -204,6 +207,12 @@ public class Board extends JPanel implements ActionListener {
         }
         // Remove Player position from coins
         coins.remove(0);
+
+        for(int i=0; i<ENEMY_COUNT; i++){
+            int[] coord = coins.get((int)(Math.random() * coins.size()));
+            enemies.add(new Enemy(coord[0], coord[1], SPRITE_SIZE));
+            coins.remove(coord);
+        }
         // Add hidden treasures
         int[] coord;
         for(int i = 0; i < HIDDEN_TREASURE_COUNT; i++){
@@ -288,6 +297,9 @@ public class Board extends JPanel implements ActionListener {
 
             g.drawImage(exit, (EXIT_X * SPRITE_SIZE) + MAZE_X, (EXIT_Y * SPRITE_SIZE) + MAZE_Y, this);
             g.drawImage(player.getImage(), player.getX(), player.getY(), this);
+            for(int i = 0; i < ENEMY_COUNT; i++){
+                g.drawImage(enemies.get(i).getImage(), enemies.get(i).getX(), enemies.get(i).getY(), this);
+            }
 
             // Different things to draw based on whether bomb is flashing or not
             for(Bomb bomb : player.getBombs()){
@@ -345,10 +357,16 @@ public class Board extends JPanel implements ActionListener {
         g.drawString(scoreMsg, (B_WIDTH - fm.stringWidth(msg)) / 2, (B_HEIGHT / 2) + 10);
     }
 
-    private boolean willCollide(int x,int y){
+    private boolean willCollide(int x,int y, boolean isEnemy){
         int i = (y - MAZE_Y)/SPRITE_SIZE;
         int j = (x - MAZE_X)/SPRITE_SIZE;
-        if(grid[i][j] == TREASURE_CODE && player.getKey() > 0){
+        if(i <= 0 || j <= 0 || i >= ROWS - 1 || j >= COLUMNS - 1){
+            return true;
+        }
+        if(isEnemy && grid[i][j] == SPIKE_CODE){
+            return true;
+        }
+        if(!isEnemy && grid[i][j] == TREASURE_CODE && player.getKey() > 0){
             grid[i][j] = TREASURE_OPEN_CODE;
             player.setChest(player.getChest() + 1);
             player.setKey(player.getKey() - 1);
@@ -375,6 +393,78 @@ public class Board extends JPanel implements ActionListener {
                 break;
             }
         }
+        for(Enemy enemy: enemies){
+            if(enemy.getX() == player.getX() && enemy.getY() == player.getY()){
+                inGame = false;
+            }
+        }
+    }
+
+    private int[] playerSeen(Enemy enemy){
+        int playerX = player.getX();
+        int playerY = player.getY();
+        int enemyX = enemy.getX();
+        int enemyY = enemy.getY();
+        int i = (enemyY - MAZE_Y)/SPRITE_SIZE;
+        int j = (enemyX - MAZE_X)/SPRITE_SIZE;
+        int direction = 0;
+        int range = enemy.DETECT_RADIUS;
+        int result[] = {0,0,0};
+        if(playerX != enemyX && playerY != enemyY){
+            return result;
+        }
+        if(playerX == enemyX){
+            while(grid[i][j] == GRASS_CODE && range-- > 0){
+                if(playerY == enemyY){
+                    result[0] = 1;
+                    result[1] = enemyX;
+                    result[2] = enemy.getY() + (direction * enemy.SPEED); 
+                    return result;
+                }
+                if(playerY > enemyY){
+                    enemyY += enemy.SPEED;
+                    i += 1;
+                    direction = 1;
+                }else{
+                    enemyY -= enemy.SPEED;
+                    i -= 1;
+                    direction = -1;
+                }
+            }
+        }else{
+            while(grid[i][j] == GRASS_CODE && range-- > 0){
+                if(playerX == enemyX){
+                    enemy.setX(enemy.getX() + (direction * enemy.SPEED));
+                    result[0] = 1;
+                    result[1] = enemy.getX() + (direction * enemy.SPEED);
+                    result[2] = enemyY; 
+                    return result;
+                }
+                if(playerX > enemyX){
+                    enemyX += enemy.SPEED;
+                    j += 1;
+                    direction = 1;
+                }else{
+                    enemyX -= enemy.SPEED;
+                    j -= 1;
+                    direction = -1;
+                }
+            }
+        }
+        return result;
+    }
+
+    private void checkEnemyCollision(Enemy enemy, int x, int y){
+        for(Enemy enemy1: enemies){
+            if(enemy1 != enemy){
+                if(enemy1.getX() == x && enemy1.getY() == y){
+                    return;
+                }else{
+                    enemy.setX(x);
+                    enemy.setY(y);
+                }
+            }
+        }
     }
 
     @Override
@@ -383,7 +473,7 @@ public class Board extends JPanel implements ActionListener {
         //counter++;
         if (inGame) {
             //checkCollision();
-            if(!willCollide(player.x + player.dx, player.y + player.dy)){
+            if(!willCollide(player.x + player.dx, player.y + player.dy, false)){
                 player.move();
                 checkCell();
             }
@@ -393,6 +483,20 @@ public class Board extends JPanel implements ActionListener {
         }
         repaint();
     }
+
+    ActionListener moveEnemies = (ActionEvent e) -> {
+        for(Enemy enemy: enemies){
+            int[] coord = playerSeen(enemy);
+            if(coord[0] == 1){
+                checkEnemyCollision(enemy, coord[1], coord[2]);
+                return;
+            }
+            int[] coord1 = enemy.move();
+            if(!willCollide(coord1[0], coord1[1], true)){
+                checkEnemyCollision(enemy, coord1[0], coord1[1]);
+            }
+        }
+    };
 
     ActionListener incrementTime = new ActionListener() {
         @Override
@@ -432,6 +536,8 @@ public class Board extends JPanel implements ActionListener {
                 time = "00:00:00";
                 gameTimer = new Timer(1000, incrementTime);
                 gameTimer.start();
+                enemyMove = new Timer(1000, moveEnemies);
+                enemyMove.start();
                 return;
             }
             player.keyReleased(e);
