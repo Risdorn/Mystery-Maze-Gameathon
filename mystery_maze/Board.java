@@ -48,7 +48,6 @@ public class Board extends JPanel implements ActionListener {
     private int[][] grid;
     private final List<int[]> coins = new ArrayList<>();
     private final List<Enemy> enemies = new ArrayList<>();
-    private final List<Enemy> removeEnemies = new ArrayList<>();
     private final Date startTime = new Date();
     private Timer timer;
     private Timer gameTimer;
@@ -378,6 +377,9 @@ public class Board extends JPanel implements ActionListener {
     private void checkCell(){
         int i = (player.getY() - MAZE_Y)/SPRITE_SIZE;
         int j = (player.getX() - MAZE_X)/SPRITE_SIZE;
+        if(i == EXIT_Y && j == EXIT_X){
+            inGame = false;
+        }
         switch (grid[i][j]) {
             case SPIKE_CODE -> {
                 inGame = false;
@@ -478,7 +480,8 @@ public class Board extends JPanel implements ActionListener {
                 int range = bomb.RANGE;
                 for(Enemy enemy: enemies){
                     if(enemy.getX() == bombX && enemy.getY() == bombY){
-                        removeEnemies.add(enemy);
+                        enemy.setDead(true);
+                        enemy.loadImage("Assets/V01_Enemy_Dead.png");
                     }
                 }
                 if(player.getX() == bombX && player.getY() == bombY){
@@ -489,7 +492,8 @@ public class Board extends JPanel implements ActionListener {
                 while(range-- > 0 && grid[j][i] == GRASS_CODE){
                     for(Enemy enemy: enemies){
                         if(enemy.getX() == bombX && enemy.getY() == bombY){
-                            removeEnemies.add(enemy);
+                            enemy.setDead(true);
+                            enemy.loadImage("Assets/V01_Enemy_Dead.png");
                         }
                     }
                     if(player.getX() == bombX && player.getY() == bombY){
@@ -504,7 +508,8 @@ public class Board extends JPanel implements ActionListener {
                 while(range-- > 0 && grid[j][i] == GRASS_CODE){
                     for(Enemy enemy: enemies){
                         if(enemy.getX() == bombX && enemy.getY() == bombY){
-                            removeEnemies.add(enemy);
+                            enemy.setDead(true);
+                            enemy.loadImage("Assets/V01_Enemy_Dead.png");
                         }
                     }
                     if(player.getX() == bombX && player.getY() == bombY){
@@ -521,7 +526,8 @@ public class Board extends JPanel implements ActionListener {
                 while(range-- > 0 && grid[j][i] == GRASS_CODE){
                     for(Enemy enemy: enemies){
                         if(enemy.getX() == bombX && enemy.getY() == bombY){
-                            removeEnemies.add(enemy);
+                            enemy.setDead(true);
+                            enemy.loadImage("Assets/V01_Enemy_Dead.png");
                         }
                     }
                     if(player.getX() == bombX && player.getY() == bombY){
@@ -536,7 +542,8 @@ public class Board extends JPanel implements ActionListener {
                 while(range-- > 0 && grid[j][i] == GRASS_CODE){
                     for(Enemy enemy: enemies){
                         if(enemy.getX() == bombX && enemy.getY() == bombY){
-                            removeEnemies.add(enemy);
+                            enemy.setDead(true);
+                            enemy.loadImage("Assets/V01_Enemy_Dead.png");
                         }
                     }
                     if(player.getX() == bombX && player.getY() == bombY){
@@ -568,11 +575,19 @@ public class Board extends JPanel implements ActionListener {
     }
 
     ActionListener moveEnemies = (ActionEvent e) -> {
-        for(Enemy enemy: removeEnemies){
-            enemies.remove(enemy);
+        List<Integer> dead = new ArrayList<>();
+        for(int i = 0; i < enemies.size(); i++){
+            if(enemies.get(i).isDead()){
+                dead.add(i);
+            }
         }
-        removeEnemies.clear();
+        for(int i: dead){
+            enemies.remove(i);
+        }
         for(Enemy enemy: enemies){
+            if(enemy.isDead()){
+                continue;
+            }
             int[] coord = playerSeen(enemy);
             if(coord[0] == 1){
                 checkEnemyCollision(enemy, coord[1], coord[2]);

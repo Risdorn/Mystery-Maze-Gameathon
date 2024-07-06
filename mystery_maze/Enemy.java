@@ -3,6 +3,7 @@ package mystery_maze;
 public class Enemy extends Sprite{
     protected final int SPEED = 20;
     protected final int DETECT_RADIUS = 100;
+    private boolean isDead = false;
     
     public Enemy(int x, int y, int SPRITE_SIZE) {
         super(x, y, SPRITE_SIZE);
@@ -12,6 +13,14 @@ public class Enemy extends Sprite{
     private void initEnemy() {
         loadImage("Assets/V01_Enemy.png");
         getImageDimensions();
+    }
+
+    public boolean isDead() {
+        return isDead;
+    }
+
+    public void setDead(boolean dead) {
+        isDead = dead;
     }
 
     public int[] move(){

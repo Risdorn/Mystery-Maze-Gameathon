@@ -1,0 +1,1 @@
+Main-Class: mystery_maze.Application
