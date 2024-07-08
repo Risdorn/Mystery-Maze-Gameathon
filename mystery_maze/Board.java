@@ -36,23 +36,25 @@ public class Board extends JPanel implements ActionListener {
     private final int ENEMY_COUNT = 5;
     private final int WALL_CODE = 1;
     private final int WALL_2_CODE = 2;
-    private final int SPIKE_CODE = 3;
+    private final int SPIKE_CODE = 3;    
     private final int TREASURE_CODE = 4;
     private final int TREASURE_OPEN_CODE = 5;
     private final int KEY_CODE = 6;
     private final int GRASS_CODE = 0;
+    private final double SPIKE_PROB = 0.85;
 
     private boolean GameStarted = false;
     private boolean inGame = true;
 
     private int[][] grid;
-    private final List<int[]> coins = new ArrayList<>();
-    private final List<Enemy> enemies = new ArrayList<>();
-    private final Date startTime = new Date();
+    private List<int[]> coins;
+    private List<Enemy> enemies;
+    private Date startTime;
     private Timer timer;
     private Timer gameTimer;
     private Timer enemyMove;
     private String time;
+    private String gameOverMsg;
 
     private Image wall_1;
     private Image wall_2;
@@ -81,8 +83,6 @@ public class Board extends JPanel implements ActionListener {
 
         setPreferredSize(new Dimension(B_WIDTH, B_HEIGHT));
         loadImages();
-        initPlayer();
-        initGame();
     }
 
     private void loadImages() {
@@ -125,6 +125,22 @@ public class Board extends JPanel implements ActionListener {
 
     }
 
+    private void restart(){
+        GameStarted = true;
+        inGame = true;
+        coins = new ArrayList<>();
+        enemies = new ArrayList<>();
+        startTime = new Date();
+        initPlayer();
+        initGame();
+        startTime.setTime(System.currentTimeMillis());
+        time = "00:00:00";
+        gameTimer = new Timer(1000, incrementTime);
+        gameTimer.start();
+        enemyMove = new Timer(1000, moveEnemies);
+        enemyMove.start();
+    }
+
     private void initPlayer() {
         player = new Player(Player_X,Player_Y, SPRITE_SIZE);
         player.setX((player.getX() * SPRITE_SIZE) + MAZE_X);
@@ -139,7 +155,6 @@ public class Board extends JPanel implements ActionListener {
         }
         grid = maze.getMaze();
         createMaze();
-        System.out.println("The Maze has been generated");
         //repaint();
         timer = new Timer(DELAY, this);
         timer.start();
@@ -187,7 +202,7 @@ public class Board extends JPanel implements ActionListener {
                     t_possible.add(new int[]{(j * SPRITE_SIZE) + MAZE_X, (i * SPRITE_SIZE) + MAZE_Y});
                 }
             
-                if(r > 0.93 && i!=0 && j!=0 && j!=COLUMNS-1 && grid[i][j] == 1 && grid[i-1][j] != 1){
+                if(r > SPIKE_PROB && i!=0 && j!=0 && j!=COLUMNS-1 && grid[i][j] == 1 && grid[i-1][j] != 1){
                     // Randomly decide if a wall is converted to spike or not
                     temp_grid[i][j] = SPIKE_CODE;
                 }else if(grid[i][j] == 1 && i != ROWS-1 && grid[i+1][j] == 1){
@@ -236,6 +251,9 @@ public class Board extends JPanel implements ActionListener {
         }else if(inGame){
             doDrawing(g);
         }else{
+            timer.stop();
+            gameTimer.stop();
+            enemyMove.stop();
             drawGameOver(g);
         }
         Toolkit.getDefaultToolkit().sync();
@@ -314,26 +332,30 @@ public class Board extends JPanel implements ActionListener {
                     int i = (bomb.getX() - MAZE_X)/SPRITE_SIZE;
                     int j = (bomb.getY() - MAZE_Y)/SPRITE_SIZE - 1;
                     int range = bomb.RANGE;
-                    while(range-- > 0 && grid[j][i] == GRASS_CODE){
+                    while(range-- > 0 && (grid[j][i] == GRASS_CODE || grid[j][i] == SPIKE_CODE)){
+                        grid[j][i] = GRASS_CODE;
                         g.drawImage(bomb_flash, (i*SPRITE_SIZE) + MAZE_X, (j*SPRITE_SIZE) + MAZE_Y, this);
                         j -= 1;
                     }
                     j = (bomb.getY() - MAZE_Y)/SPRITE_SIZE + 1;
                     range = 2;
-                    while(range-- > 0 && grid[j][i] == GRASS_CODE){
+                    while(range-- > 0 && (grid[j][i] == GRASS_CODE || grid[j][i] == SPIKE_CODE)){
+                        grid[j][i] = GRASS_CODE;
                         g.drawImage(bomb_flash, (i*SPRITE_SIZE) + MAZE_X, (j*SPRITE_SIZE) + MAZE_Y, this);
                         j += 1;
                     }
                     range = 2;
                     j = (bomb.getY() - MAZE_Y)/SPRITE_SIZE;
                     i -= 1;
-                    while(range-- > 0 && grid[j][i] == GRASS_CODE){
+                    while(range-- > 0 && (grid[j][i] == GRASS_CODE || grid[j][i] == SPIKE_CODE)){
+                        grid[j][i] = GRASS_CODE;
                         g.drawImage(bomb_flash, (i*SPRITE_SIZE) + MAZE_X, (j*SPRITE_SIZE) + MAZE_Y, this);
                         i -= 1;
                     }
                     range = 2;
                     i = (bomb.getX() - MAZE_X)/SPRITE_SIZE + 1;
-                    while(range-- > 0 && grid[j][i] == GRASS_CODE){
+                    while(range-- > 0 && (grid[j][i] == GRASS_CODE || grid[j][i] == SPIKE_CODE)){
+                        grid[j][i] = GRASS_CODE;
                         g.drawImage(bomb_flash, (i*SPRITE_SIZE) + MAZE_X, (j*SPRITE_SIZE) + MAZE_Y, this);
                         i += 1;
                     }
@@ -345,16 +367,17 @@ public class Board extends JPanel implements ActionListener {
 
     private void drawGameOver(Graphics g) {
 
-        String msg = "Game Over";
         int score = (10 * player.getCoin()) + (100 * player.getChest());
-        String scoreMsg = "Score: " + score;
+        String scoreMsg = "Time: " + time + "     Score: " + score;
+        String restart = "Press Enter to Restart";
         Font small = new Font("Helvetica", Font.BOLD, 14);
         FontMetrics fm = getFontMetrics(small);
 
         g.setColor(Color.white);
         g.setFont(small);
-        g.drawString(msg, (B_WIDTH - fm.stringWidth(msg)) / 2, (B_HEIGHT / 2) - 10);
-        g.drawString(scoreMsg, (B_WIDTH - fm.stringWidth(msg)) / 2, (B_HEIGHT / 2) + 10);
+        g.drawString(gameOverMsg, (B_WIDTH - fm.stringWidth(gameOverMsg)) / 2, (B_HEIGHT / 2) - 20);
+        g.drawString(scoreMsg, (B_WIDTH - fm.stringWidth(scoreMsg)) / 2, (B_HEIGHT / 2));
+        g.drawString(restart, (B_WIDTH - fm.stringWidth(restart)) / 2, (B_HEIGHT / 2) + 20);
     }
 
     private boolean willCollide(int x,int y, boolean isEnemy){
@@ -379,10 +402,12 @@ public class Board extends JPanel implements ActionListener {
         int j = (player.getX() - MAZE_X)/SPRITE_SIZE;
         if(i == EXIT_Y && j == EXIT_X){
             inGame = false;
+            gameOverMsg = "You successfully looted the maze!";
         }
         switch (grid[i][j]) {
             case SPIKE_CODE -> {
                 inGame = false;
+                gameOverMsg = "You got skewered!";
             }
             case KEY_CODE -> {
                 grid[i][j] = GRASS_CODE;
@@ -399,6 +424,7 @@ public class Board extends JPanel implements ActionListener {
         for(Enemy enemy: enemies){
             if(enemy.getX() == player.getX() && enemy.getY() == player.getY()){
                 inGame = false;
+                gameOverMsg = "You got caught!";
             }
         }
     }
@@ -486,10 +512,12 @@ public class Board extends JPanel implements ActionListener {
                 }
                 if(player.getX() == bombX && player.getY() == bombY){
                     inGame = false;
+                    gameOverMsg = "Player tried to defuse a bomb!";
                 }
                 bombX -= SPRITE_SIZE;
                 j -= 1;
-                while(range-- > 0 && grid[j][i] == GRASS_CODE){
+                while(range-- > 0 && (grid[j][i] == GRASS_CODE || grid[j][i] == SPIKE_CODE)){
+                    grid[j][i] = GRASS_CODE;
                     for(Enemy enemy: enemies){
                         if(enemy.getX() == bombX && enemy.getY() == bombY){
                             enemy.setDead(true);
@@ -498,6 +526,7 @@ public class Board extends JPanel implements ActionListener {
                     }
                     if(player.getX() == bombX && player.getY() == bombY){
                         inGame = false;
+                        gameOverMsg = "Player unable to outrun the explosion!";
                     }
                     j -= 1;
                     bombX -= SPRITE_SIZE;
@@ -505,7 +534,8 @@ public class Board extends JPanel implements ActionListener {
                 bombX = bomb.getX() + SPRITE_SIZE;
                 j = (bomb.getY() - MAZE_Y)/SPRITE_SIZE + 1;
                 range = bomb.RANGE;
-                while(range-- > 0 && grid[j][i] == GRASS_CODE){
+                while(range-- > 0 && (grid[j][i] == GRASS_CODE || grid[j][i] == SPIKE_CODE)){
+                    grid[j][i] = GRASS_CODE;
                     for(Enemy enemy: enemies){
                         if(enemy.getX() == bombX && enemy.getY() == bombY){
                             enemy.setDead(true);
@@ -514,6 +544,7 @@ public class Board extends JPanel implements ActionListener {
                     }
                     if(player.getX() == bombX && player.getY() == bombY){
                         inGame = false;
+                        gameOverMsg = "Player tried to defuse a bomb!";
                     }
                     j += 1;
                     bombX += SPRITE_SIZE;
@@ -523,7 +554,8 @@ public class Board extends JPanel implements ActionListener {
                 range = bomb.RANGE;
                 j = (bomb.getY() - MAZE_Y)/SPRITE_SIZE;
                 i -= 1;
-                while(range-- > 0 && grid[j][i] == GRASS_CODE){
+                while(range-- > 0 && (grid[j][i] == GRASS_CODE || grid[j][i] == SPIKE_CODE)){
+                    grid[j][i] = GRASS_CODE;
                     for(Enemy enemy: enemies){
                         if(enemy.getX() == bombX && enemy.getY() == bombY){
                             enemy.setDead(true);
@@ -532,6 +564,7 @@ public class Board extends JPanel implements ActionListener {
                     }
                     if(player.getX() == bombX && player.getY() == bombY){
                         inGame = false;
+                        gameOverMsg = "Player unable to outrun the explosion!";
                     }
                     i -= 1;
                     bombY -= SPRITE_SIZE;
@@ -539,7 +572,8 @@ public class Board extends JPanel implements ActionListener {
                 bombY = bomb.getY() + SPRITE_SIZE;
                 range = bomb.RANGE;
                 i = (bomb.getX() - MAZE_X)/SPRITE_SIZE + 1;
-                while(range-- > 0 && grid[j][i] == GRASS_CODE){
+                while(range-- > 0 && (grid[j][i] == GRASS_CODE || grid[j][i] == SPIKE_CODE)){
+                    grid[j][i] = GRASS_CODE;
                     for(Enemy enemy: enemies){
                         if(enemy.getX() == bombX && enemy.getY() == bombY){
                             enemy.setDead(true);
@@ -548,6 +582,7 @@ public class Board extends JPanel implements ActionListener {
                     }
                     if(player.getX() == bombX && player.getY() == bombY){
                         inGame = false;
+                        gameOverMsg = "Player tried to defuse a bomb!";
                     }
                     i += 1;
                     bombY += SPRITE_SIZE;
@@ -633,13 +668,6 @@ public class Board extends JPanel implements ActionListener {
         public void keyReleased(KeyEvent e) {
             int key = e.getKeyCode();
             if(key == KeyEvent.VK_ENTER){
-                GameStarted = true;
-                startTime.setTime(System.currentTimeMillis());
-                time = "00:00:00";
-                gameTimer = new Timer(1000, incrementTime);
-                gameTimer.start();
-                enemyMove = new Timer(1000, moveEnemies);
-                enemyMove.start();
                 return;
             }
             player.keyReleased(e);
@@ -647,6 +675,11 @@ public class Board extends JPanel implements ActionListener {
 
         @Override
         public void keyPressed(KeyEvent e) {
+            int key = e.getKeyCode();
+            if(key == KeyEvent.VK_ENTER){
+                restart();
+                return;
+            }
             player.keyPressed(e);
         }
     }
